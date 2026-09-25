@@ -1,0 +1,934 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thẻ Nhớ TOEIC</title>
+<meta name="description" content="Flashcard từ vựng TOEIC với hệ thống lặp lại ngắt quãng Leitner, tự lưu tiến độ.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;600;700&display=swap">
+<style>
+  :root{
+    --paper:#FAF9F5; --ink:#1B2430; --ink-soft:#5B6472; --ink-faint:#8A93A0;
+    --rule:#C3CFE1; --margin:#C96A5E;
+    --accent:#1F6F5C; --accent-ink:#0C3A30;
+    --warm:#B85C3E; --warm-ink:#5C2A18;
+    --card-bg:#FFFFFF; --surface:#F1EEE6; --border:#DDD7C8;
+    --shadow:rgba(27,36,48,.14);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#14181D; --ink:#E9EAEC; --ink-soft:#9AA3AE; --ink-faint:#6B7480;
+      --rule:#2C3B54; --margin:#9C5850;
+      --accent:#4FAE93; --accent-ink:#C9F1E4;
+      --warm:#D98462; --warm-ink:#F6DCCB;
+      --card-bg:#1D2229; --surface:#191D23; --border:#2B3038;
+      --shadow:rgba(0,0,0,.45);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#14181D; --ink:#E9EAEC; --ink-soft:#9AA3AE; --ink-faint:#6B7480;
+    --rule:#2C3B54; --margin:#9C5850;
+    --accent:#4FAE93; --accent-ink:#C9F1E4;
+    --warm:#D98462; --warm-ink:#F6DCCB;
+    --card-bg:#1D2229; --surface:#191D23; --border:#2B3038;
+    --shadow:rgba(0,0,0,.45);
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{background:var(--paper); color:var(--ink); font-family:"IBM Plex Sans",system-ui,sans-serif;}
+  .wrap{max-width:640px; margin:0 auto; padding:28px 16px 48px; display:flex; flex-direction:column; gap:22px;}
+
+  .top{display:flex; flex-direction:column; gap:6px;}
+  .eyebrow{font-family:"IBM Plex Mono",monospace; font-size:11.5px; font-weight:600; letter-spacing:.14em; color:var(--accent);}
+  h1{margin:0; font-size:28px; font-weight:700; letter-spacing:-.01em; text-wrap:balance;}
+  .sub{margin:0; color:var(--ink-soft); font-size:14px;}
+  .localnote{margin:2px 0 0; color:var(--ink-faint); font-size:11.5px; line-height:1.5;}
+
+  .tabs{display:flex; gap:4px; border-bottom:1px solid var(--border);}
+  .tab{font:inherit; font-weight:600; font-size:14px; color:var(--ink-soft); background:none; border:none; padding:10px 4px; margin-right:18px; cursor:pointer; border-bottom:2px solid transparent; transition:color .15s;}
+  .tab.active{color:var(--ink); border-bottom-color:var(--accent);}
+  .tab:hover{color:var(--ink);}
+
+  .panel{display:none; flex-direction:column; gap:16px;}
+  .panel.active{display:flex;}
+
+  .toolbar{display:flex; flex-wrap:wrap; gap:10px; align-items:center;}
+  .select{font:inherit; font-size:13.5px; color:var(--ink); background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:8px 10px; flex:1 1 180px; min-width:0;}
+  .pillgroup{display:flex; background:var(--surface); border:1px solid var(--border); border-radius:999px; padding:3px; gap:2px;}
+  .pill{font:inherit; font-size:12.5px; font-weight:600; color:var(--ink-soft); background:none; border:none; border-radius:999px; padding:7px 12px; cursor:pointer; white-space:nowrap;}
+  .pill.active{background:var(--accent); color:#fff;}
+  .iconbtn{font:inherit; font-size:12.5px; font-weight:600; color:var(--ink); background:var(--surface); border:1px solid var(--border); border-radius:999px; padding:8px 13px; cursor:pointer;}
+  .iconbtn.on{background:var(--accent); color:#fff; border-color:var(--accent);}
+
+  .counter{font-family:"IBM Plex Mono",monospace; font-size:12.5px; color:var(--ink-faint); text-align:center;}
+
+  .stage{min-height:280px; display:flex; align-items:center; justify-content:center; perspective:1400px;}
+  .card{position:relative; width:100%; max-width:420px; aspect-ratio:5/3.1; cursor:pointer; transform-style:preserve-3d; transition:transform .5s cubic-bezier(.2,.7,.3,1);}
+  .card.flipped{transform:rotateY(180deg);}
+  .face{position:absolute; inset:0; backface-visibility:hidden; border-radius:14px; background:var(--card-bg); border:1px solid var(--border); box-shadow:0 10px 28px -12px var(--shadow); padding:22px 22px 22px 40px; display:flex; flex-direction:column; overflow:hidden;}
+  .face::before{content:""; position:absolute; left:26px; top:0; bottom:0; width:1px; background:var(--margin); opacity:.55;}
+  .face::after{content:""; position:absolute; inset:0; background-image:repeating-linear-gradient(var(--card-bg) 0 27px, var(--rule) 27px 28px); opacity:.55; pointer-events:none;}
+  .face-front{justify-content:space-between;}
+  .face-back{transform:rotateY(180deg); justify-content:space-between;}
+  .face-inner{position:relative; z-index:1; display:flex; flex-direction:column; gap:10px; height:100%; justify-content:space-between;}
+
+  .tagrow{display:flex; gap:6px; align-items:center; flex-wrap:wrap;}
+  .tag{font-size:11px; font-weight:600; color:var(--accent-ink); background:color-mix(in srgb, var(--accent) 16%, transparent); border-radius:6px; padding:3px 8px;}
+  .postag{font-family:"IBM Plex Mono",monospace; font-size:11px; font-weight:600; color:var(--ink-faint); border:1px solid var(--border); border-radius:6px; padding:2px 7px; text-transform:uppercase;}
+
+  .word{font-family:"IBM Plex Mono",monospace; font-weight:700; font-size:clamp(26px,7vw,38px); letter-spacing:-.01em; line-height:1.1;}
+  .ipa{font-family:"IBM Plex Mono",monospace; font-size:15px; color:var(--ink-soft); margin-top:3px;}
+  .flipnote{color:var(--ink-faint); font-size:12.5px;}
+
+  .meaning{font-size:21px; font-weight:700; line-height:1.3;}
+  .example{color:var(--ink-soft); font-size:14px; font-style:italic; line-height:1.5;}
+  .boxrow{display:flex; align-items:center; gap:8px; font-size:11.5px; color:var(--ink-faint);}
+  .dots{display:flex; gap:4px;}
+  .dot{width:7px; height:7px; border-radius:50%; background:var(--border);}
+  .dot.on{background:var(--accent);}
+
+  .actions{display:flex; gap:10px; max-width:420px; margin:0 auto; width:100%;}
+  .actbtn{flex:1; font:inherit; font-weight:700; font-size:14.5px; border-radius:11px; padding:13px; cursor:pointer; border:1px solid transparent; transition:transform .1s;}
+  .actbtn:active{transform:scale(.97);}
+  .actbtn-no{background:color-mix(in srgb, var(--warm) 14%, transparent); color:var(--warm-ink); border-color:color-mix(in srgb, var(--warm) 35%, transparent);}
+  .actbtn-yes{background:var(--accent); color:#fff;}
+  .hint{text-align:center; font-size:12px; color:var(--ink-faint); margin:0;}
+
+  .empty{max-width:420px; margin:0 auto; text-align:center; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:36px 22px; display:flex; flex-direction:column; gap:14px; align-items:center;}
+  .empty .big{font-size:32px;}
+  .empty p{margin:0; color:var(--ink-soft); font-size:14px; line-height:1.5;}
+  .empty button{font:inherit; font-weight:700; font-size:13.5px; color:#fff; background:var(--accent); border:none; border-radius:999px; padding:10px 18px; cursor:pointer;}
+
+  .stats{display:grid; grid-template-columns:repeat(2,1fr); gap:10px;}
+  .stattile{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 16px; display:flex; flex-direction:column; gap:4px;}
+  .stattile .n{font-family:"IBM Plex Mono",monospace; font-weight:700; font-size:24px;}
+  .stattile .l{font-size:12px; color:var(--ink-soft);}
+
+  h2{font-size:14px; font-weight:700; margin:0 0 10px;}
+  .boxchart, .topicbreak{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px;}
+  .boxline{display:grid; grid-template-columns:64px 1fr 40px; align-items:center; gap:10px; font-size:12.5px; padding:5px 0;}
+  .boxline .lbl{color:var(--ink-soft); font-size:11.5px;}
+  .barbg{height:8px; border-radius:5px; background:var(--border); overflow:hidden;}
+  .barfg{height:100%; background:var(--accent); border-radius:5px;}
+  .boxline .n{font-family:"IBM Plex Mono",monospace; text-align:right; font-weight:600; font-size:12px; color:var(--ink-soft);}
+
+  .topicrow{padding:9px 0; border-top:1px solid var(--border);}
+  .topicrow:first-child{border-top:none;}
+  .topicrow .trow-top{display:flex; justify-content:space-between; font-size:13px; font-weight:600; margin-bottom:6px;}
+  .topicrow .trow-top span:last-child{font-family:"IBM Plex Mono",monospace; font-weight:600; color:var(--ink-soft); font-size:12px;}
+
+  .note{font-size:12.5px; color:var(--ink-faint); line-height:1.6; margin:0;}
+
+  /* quiz */
+  .quizsetup{max-width:420px; margin:0 auto; width:100%; display:flex; flex-direction:column; gap:14px; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:20px;}
+  .quizsetup .row{display:flex; flex-direction:column; gap:6px;}
+  .quizsetup label{font-size:12px; font-weight:600; color:var(--ink-soft);}
+  .typedesc{font-size:11.5px; color:var(--ink-faint); margin-top:4px; line-height:1.5;}
+  .startbtn{font:inherit; font-weight:700; font-size:14.5px; color:#fff; background:var(--accent); border:none; border-radius:11px; padding:13px; cursor:pointer;}
+  .qprogress{font-family:"IBM Plex Mono",monospace; font-size:12.5px; color:var(--ink-faint); text-align:center; margin-bottom:14px;}
+  .qword{max-width:420px; margin:0 auto 14px; background:var(--card-bg); border:1px solid var(--border); border-radius:14px; padding:20px; text-align:center; box-shadow:0 10px 28px -14px var(--shadow);}
+  .qword .tagrow{justify-content:center;}
+  .qword .word{margin-top:8px;}
+  .qoptions{max-width:420px; margin:0 auto; width:100%; display:flex; flex-direction:column; gap:9px;}
+  .qoption{font:inherit; font-size:14px; text-align:left; color:var(--ink); background:var(--card-bg); border:1px solid var(--border); border-radius:11px; padding:12px 14px; cursor:pointer;}
+  .qoption:hover:not(.locked){border-color:var(--accent);}
+  .qoption.locked{cursor:default;}
+  .qoption.correct{background:color-mix(in srgb, var(--accent) 18%, transparent); border-color:var(--accent); font-weight:600;}
+  .qoption.wrong{background:color-mix(in srgb, var(--warm) 16%, transparent); border-color:var(--warm);}
+  .qoption.mono{font-family:"IBM Plex Mono",monospace; font-weight:600;}
+  .clozesentence{font-size:16px; line-height:1.7; margin-top:8px;}
+  .listenbtn{display:block; margin:6px auto 0; font:inherit; font-weight:700; font-size:15px; color:#fff; background:var(--accent); border:none; border-radius:999px; padding:12px 24px; cursor:pointer;}
+  .listenbtn.small{display:inline-block; margin:0; font-size:13.5px; padding:10px 16px; background:var(--surface); color:var(--ink); border:1px solid var(--border);}
+  .speakwrap{max-width:420px; margin:8px auto 0; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;}
+  .micbtn{font:inherit; font-weight:700; font-size:14.5px; color:#fff; background:var(--warm); border:none; border-radius:999px; padding:11px 20px; cursor:pointer;}
+  .micbtn.listening{background:var(--accent); animation:micpulse 1.1s ease-in-out infinite;}
+  .playback{max-width:420px; margin:10px auto 0; text-align:center;}
+  .playback-label{display:block; font-size:11.5px; color:var(--ink-faint); margin-bottom:6px;}
+  .playback audio, .missaudio{width:100%; max-width:340px; height:34px;}
+  .qmissed .item{display:flex; flex-direction:column; gap:6px;}
+  .missaudio{margin-top:2px; max-width:100%;}
+  @keyframes micpulse{
+    0%{ box-shadow:0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent); }
+    70%{ box-shadow:0 0 0 12px color-mix(in srgb, var(--accent) 0%, transparent); }
+    100%{ box-shadow:0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent); }
+  }
+  .typewrap{max-width:420px; margin:0 auto; width:100%; display:flex; gap:8px;}
+  .typeinput{flex:1; min-width:0; font:inherit; font-size:15px; font-family:"IBM Plex Mono",monospace; color:var(--ink); background:var(--card-bg); border:1px solid var(--border); border-radius:10px; padding:11px 13px;}
+  .typesubmit{font:inherit; font-weight:700; font-size:13.5px; color:#fff; background:var(--accent); border:none; border-radius:10px; padding:0 16px; cursor:pointer;}
+  .typeresult{max-width:420px; margin:0 auto; text-align:center; font-weight:700; font-size:14.5px; padding:11px; border-radius:10px;}
+  .typeresult.ok{background:color-mix(in srgb, var(--accent) 16%, transparent); color:var(--accent-ink);}
+  .typeresult.bad{background:color-mix(in srgb, var(--warm) 14%, transparent); color:var(--warm-ink);}
+  .typeresult b{font-family:"IBM Plex Mono",monospace;}
+  .typeyour{max-width:420px; margin:8px auto 0; text-align:center; font-size:12.5px; color:var(--ink-faint);}
+  .typeyour b{font-family:"IBM Plex Mono",monospace; color:var(--ink);}
+  .qnext{max-width:420px; margin:14px auto 0; width:100%;}
+  .qnext button{width:100%; font:inherit; font-weight:700; font-size:14px; color:#fff; background:var(--accent); border:none; border-radius:11px; padding:12px; cursor:pointer;}
+  .qresult{max-width:420px; margin:0 auto; text-align:center; display:flex; flex-direction:column; gap:16px;}
+  .qscore{font-family:"IBM Plex Mono",monospace; font-weight:700; font-size:40px;}
+  .qmissed{text-align:left; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 16px; display:flex; flex-direction:column; gap:8px;}
+  .qmissed .item{font-size:13px;}
+  .qmissed .item b{font-family:"IBM Plex Mono",monospace;}
+  .qresult .btnrow{display:flex; gap:10px;}
+  .qresult .btnrow button{flex:1; font:inherit; font-weight:700; font-size:13.5px; border-radius:11px; padding:11px; cursor:pointer; border:1px solid var(--border); background:var(--surface); color:var(--ink);}
+  .qresult .btnrow button.primary{background:var(--accent); color:#fff; border-color:var(--accent);}
+
+  @media (max-width:420px){
+    .toolbar{flex-direction:column; align-items:stretch;}
+    .pillgroup{justify-content:center;}
+    .stats{grid-template-columns:1fr 1fr;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">TOEIC · SPACED REPETITION · BẢN CHẠY MÁY (có mic)</div>
+    <h1>Thẻ Nhớ TOEIC</h1>
+    <p class="sub">80 từ vựng · 8 chủ đề · Hệ thống Leitner 5 hộp · phiên âm IPA · kiểm tra phát âm (đọc lại nhiều lần)</p>
+    <p class="localnote">File chạy độc lập trên trình duyệt này — tiến độ chỉ lưu trên máy/trình duyệt đang mở, không đồng bộ với bản web trên claude.ai.</p>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button data-tab="study" class="tab active">Học</button>
+    <button data-tab="quiz" class="tab">Kiểm tra</button>
+    <button data-tab="progress" class="tab">Tiến độ</button>
+  </nav>
+
+  <section class="panel active" id="panel-study">
+    <div class="toolbar">
+      <select id="topicSelect" class="select"></select>
+      <div class="pillgroup" id="modeGroup">
+        <button data-mode="due" class="pill active">Đến hạn hôm nay</button>
+        <button data-mode="all" class="pill">Tất cả 80 từ</button>
+      </div>
+      <button id="shuffleBtn" class="iconbtn">⇄ Xáo trộn</button>
+    </div>
+    <div class="counter" id="counter"></div>
+    <div class="stage" id="stage"></div>
+    <div class="actions" id="actions" hidden>
+      <button id="dontKnowBtn" class="actbtn actbtn-no">✕ Chưa nhớ</button>
+      <button id="knowBtn" class="actbtn actbtn-yes">✓ Đã nhớ</button>
+    </div>
+    <p class="hint">Nhấn vào thẻ (hoặc phím Cách) để lật · Phím ← Chưa nhớ · Phím → Đã nhớ</p>
+  </section>
+
+  <section class="panel" id="panel-quiz">
+    <div id="quizStage"></div>
+    <p class="hint" id="quizHint">Phím 1–4 để chọn đáp án · Enter để sang câu tiếp theo</p>
+  </section>
+
+  <section class="panel" id="panel-progress">
+    <div class="stats" id="statTiles"></div>
+    <div class="boxchart">
+      <h2>Phân bố theo hộp ôn tập</h2>
+      <div id="boxRows"></div>
+    </div>
+    <div class="topicbreak">
+      <h2>Theo chủ đề</h2>
+      <div id="topicRows"></div>
+    </div>
+    <div class="topicbreak" id="quizHistoryWrap" hidden>
+      <h2>Lịch sử kiểm tra gần đây</h2>
+      <div id="quizHistoryBox"></div>
+    </div>
+    <p class="note">Hệ thống Leitner: mỗi lần nhớ đúng, thẻ lên hộp cao hơn và giãn cách ôn xa hơn (1 → 3 → 7 → 14 → 30 ngày); nhớ sai thì thẻ quay lại Hộp 1 để ôn lại ngay hôm sau. Cả lật thẻ lẫn làm bài kiểm tra đều cập nhật chung một hệ thống ôn tập. Tiến độ được tự lưu và đồng bộ giữa các lần mở trang.</p>
+  </section>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var VOCAB = [{"topic": "Văn phòng & Hành chính", "word": "attach", "pos": "v", "meaning": "đính kèm", "example": "Please attach your resume to the email.", "ipa": "/əˈtætʃ/"}, {"topic": "Văn phòng & Hành chính", "word": "submit", "pos": "v", "meaning": "nộp, đệ trình", "example": "You must submit the report by Friday.", "ipa": "/səbˈmɪt/"}, {"topic": "Văn phòng & Hành chính", "word": "deadline", "pos": "n", "meaning": "hạn chót", "example": "The deadline for this project is next Monday.", "ipa": "/ˈdɛdˌlaɪn/"}, {"topic": "Văn phòng & Hành chính", "word": "supervisor", "pos": "n", "meaning": "người giám sát", "example": "Ask your supervisor before taking a day off.", "ipa": "/ˈsuːpərˌvaɪzər/"}, {"topic": "Văn phòng & Hành chính", "word": "file", "pos": "v/n", "meaning": "lưu trữ (tài liệu); hồ sơ", "example": "Please file these documents in the cabinet.", "ipa": "/faɪl/"}, {"topic": "Văn phòng & Hành chính", "word": "available", "pos": "adj", "meaning": "có sẵn, rảnh", "example": "Is the manager available this afternoon?", "ipa": "/əˈveɪləbəl/"}, {"topic": "Văn phòng & Hành chính", "word": "absent", "pos": "adj", "meaning": "vắng mặt", "example": "Three employees were absent from the meeting.", "ipa": "/ˈæbsənt/"}, {"topic": "Văn phòng & Hành chính", "word": "renew", "pos": "v", "meaning": "gia hạn", "example": "We need to renew the office lease this month.", "ipa": "/rɪˈnuː/"}, {"topic": "Văn phòng & Hành chính", "word": "cabinet", "pos": "n", "meaning": "tủ hồ sơ", "example": "The contracts are kept in the top drawer of the cabinet.", "ipa": "/ˈkæbənɪt/"}, {"topic": "Văn phòng & Hành chính", "word": "reschedule", "pos": "v", "meaning": "sắp xếp lại lịch", "example": "We had to reschedule the meeting to Thursday.", "ipa": "/riˈskɛdʒuːl/"}, {"topic": "Cuộc họp & Giao tiếp", "word": "agenda", "pos": "n", "meaning": "chương trình nghị sự", "example": "The first item on the agenda is the budget review.", "ipa": "/əˈdʒɛndə/"}, {"topic": "Cuộc họp & Giao tiếp", "word": "attend", "pos": "v", "meaning": "tham dự", "example": "All staff are required to attend the training session.", "ipa": "/əˈtɛnd/"}, {"topic": "Cuộc họp & Giao tiếp", "word": "postpone", "pos": "v", "meaning": "hoãn lại", "example": "The conference was postponed due to bad weather.", "ipa": "/poʊstˈpoʊn/"}, {"topic": "Cuộc họp & Giao tiếp", "word": "colleague", "pos": "n", "meaning": "đồng nghiệp", "example": "She discussed the plan with her colleagues.", "ipa": "/ˈkɑːliːɡ/"}, {"topic": "Cuộc họp & Giao tiếp", "word": "presentation", "pos": "n", "meaning": "bài thuyết trình", "example": "He gave a presentation on the new marketing strategy.", "ipa": "/ˌprɛzənˈteɪʃən/"}, {"topic": "Cuộc họp & Giao tiếp", "word": "feedback", "pos": "n", "meaning": "phản hồi", "example": "We would appreciate your feedback on the proposal.", "ipa": "/ˈfiːdbæk/"}, {"topic": "Cuộc họp & Giao tiếp", "word": "clarify", "pos": "v", "meaning": "làm rõ", "example": "Could you clarify what you mean by that?", "ipa": "/ˈklærəˌfaɪ/"}, {"topic": "Cuộc họp & Giao tiếp", "word": "minutes", "pos": "n", "meaning": "biên bản họp", "example": "Someone needs to take the minutes of the meeting.", "ipa": "/ˈmɪnɪts/"}, {"topic": "Cuộc họp & Giao tiếp", "word": "participant", "pos": "n", "meaning": "người tham gia", "example": "Each participant received a copy of the handout.", "ipa": "/pɑːrˈtɪsəpənt/"}, {"topic": "Cuộc họp & Giao tiếp", "word": "brief", "pos": "v/adj", "meaning": "báo cáo ngắn gọn; ngắn gọn", "example": "Let me brief you on the current situation.", "ipa": "/briːf/"}, {"topic": "Du lịch & Vận chuyển", "word": "itinerary", "pos": "n", "meaning": "lịch trình", "example": "The travel agent sent us a detailed itinerary.", "ipa": "/aɪˈtɪnəˌrɛri/"}, {"topic": "Du lịch & Vận chuyển", "word": "reservation", "pos": "n", "meaning": "đặt chỗ", "example": "I'd like to make a reservation for two nights.", "ipa": "/ˌrɛzərˈveɪʃən/"}, {"topic": "Du lịch & Vận chuyển", "word": "depart", "pos": "v", "meaning": "khởi hành", "example": "The flight will depart at 9 a.m. sharp.", "ipa": "/dɪˈpɑːrt/"}, {"topic": "Du lịch & Vận chuyển", "word": "delay", "pos": "n/v", "meaning": "sự trì hoãn; trì hoãn", "example": "Passengers were informed about the delay over the speakers.", "ipa": "/dɪˈleɪ/"}, {"topic": "Du lịch & Vận chuyển", "word": "boarding pass", "pos": "n", "meaning": "thẻ lên máy bay", "example": "Please have your boarding pass ready at the gate.", "ipa": "/ˈbɔːrdɪŋ pæs/"}, {"topic": "Du lịch & Vận chuyển", "word": "fare", "pos": "n", "meaning": "giá vé", "example": "The train fare increased last month.", "ipa": "/fɛr/"}, {"topic": "Du lịch & Vận chuyển", "word": "accommodation", "pos": "n", "meaning": "chỗ ở", "example": "The company arranged accommodation near the office.", "ipa": "/əˌkɑːməˈdeɪʃən/"}, {"topic": "Du lịch & Vận chuyển", "word": "connecting flight", "pos": "n", "meaning": "chuyến bay nối chuyến", "example": "We have a two-hour layover before our connecting flight.", "ipa": "/kəˈnɛktɪŋ flaɪt/"}, {"topic": "Du lịch & Vận chuyển", "word": "customs", "pos": "n", "meaning": "hải quan", "example": "Travelers must go through customs before leaving the airport.", "ipa": "/ˈkʌstəmz/"}, {"topic": "Du lịch & Vận chuyển", "word": "refund", "pos": "n/v", "meaning": "hoàn tiền", "example": "You can request a refund if the flight is cancelled.", "ipa": "/ˈriːfʌnd/"}, {"topic": "Hợp đồng & Thỏa thuận", "word": "agreement", "pos": "n", "meaning": "thỏa thuận", "example": "Both companies signed the agreement yesterday.", "ipa": "/əˈɡriːmənt/"}, {"topic": "Hợp đồng & Thỏa thuận", "word": "terms", "pos": "n", "meaning": "điều khoản", "example": "Please read the terms and conditions carefully.", "ipa": "/tɜːrmz/"}, {"topic": "Hợp đồng & Thỏa thuận", "word": "negotiate", "pos": "v", "meaning": "đàm phán", "example": "The two sides negotiated for hours before reaching a deal.", "ipa": "/nɪˈɡoʊʃiˌeɪt/"}, {"topic": "Hợp đồng & Thỏa thuận", "word": "breach", "pos": "n/v", "meaning": "vi phạm (hợp đồng)", "example": "Failing to deliver on time is a breach of contract.", "ipa": "/briːtʃ/"}, {"topic": "Hợp đồng & Thỏa thuận", "word": "binding", "pos": "adj", "meaning": "ràng buộc (pháp lý)", "example": "This contract is legally binding on both parties.", "ipa": "/ˈbaɪndɪŋ/"}, {"topic": "Hợp đồng & Thỏa thuận", "word": "clause", "pos": "n", "meaning": "điều khoản (trong hợp đồng)", "example": "There is a cancellation clause in section three.", "ipa": "/klɔːz/"}, {"topic": "Hợp đồng & Thỏa thuận", "word": "party", "pos": "n", "meaning": "bên (trong hợp đồng)", "example": "Neither party may terminate the agreement without notice.", "ipa": "/ˈpɑːrti/"}, {"topic": "Hợp đồng & Thỏa thuận", "word": "expire", "pos": "v", "meaning": "hết hạn", "example": "The warranty expires after one year.", "ipa": "/ɪkˈspaɪər/"}, {"topic": "Hợp đồng & Thỏa thuận", "word": "draft", "pos": "n/v", "meaning": "bản nháp; soạn thảo", "example": "Our lawyer will draft the initial contract.", "ipa": "/dræft/"}, {"topic": "Hợp đồng & Thỏa thuận", "word": "obligation", "pos": "n", "meaning": "nghĩa vụ", "example": "The supplier has an obligation to meet the quality standard.", "ipa": "/ˌɑːbləˈɡeɪʃən/"}, {"topic": "Nhân sự", "word": "applicant", "pos": "n", "meaning": "người nộp đơn xin việc", "example": "Over fifty applicants applied for the position.", "ipa": "/ˈæplɪkənt/"}, {"topic": "Nhân sự", "word": "resume", "pos": "n", "meaning": "sơ yếu lý lịch", "example": "Please send your resume and a cover letter.", "ipa": "/ˈrɛzəˌmeɪ/"}, {"topic": "Nhân sự", "word": "qualification", "pos": "n", "meaning": "bằng cấp, trình độ", "example": "The job requires strong computer qualifications.", "ipa": "/ˌkwɑːləfɪˈkeɪʃən/"}, {"topic": "Nhân sự", "word": "promote", "pos": "v", "meaning": "thăng chức", "example": "She was promoted to sales manager last year.", "ipa": "/prəˈmoʊt/"}, {"topic": "Nhân sự", "word": "resign", "pos": "v", "meaning": "từ chức", "example": "He decided to resign from his position.", "ipa": "/rɪˈzaɪn/"}, {"topic": "Nhân sự", "word": "benefits", "pos": "n", "meaning": "phúc lợi", "example": "The company offers excellent health benefits.", "ipa": "/ˈbɛnəfɪts/"}, {"topic": "Nhân sự", "word": "probation", "pos": "n", "meaning": "thời gian thử việc", "example": "New employees go through a three-month probation period.", "ipa": "/proʊˈbeɪʃən/"}, {"topic": "Nhân sự", "word": "evaluate", "pos": "v", "meaning": "đánh giá", "example": "Managers evaluate staff performance twice a year.", "ipa": "/ɪˈvæljuˌeɪt/"}, {"topic": "Nhân sự", "word": "recruit", "pos": "v", "meaning": "tuyển dụng", "example": "The company plans to recruit ten new engineers.", "ipa": "/rɪˈkruːt/"}, {"topic": "Nhân sự", "word": "vacancy", "pos": "n", "meaning": "vị trí còn trống", "example": "There is a vacancy in the accounting department.", "ipa": "/ˈveɪkənsi/"}, {"topic": "Tài chính & Kế toán", "word": "invoice", "pos": "n", "meaning": "hóa đơn", "example": "Please send the invoice to our accounting department.", "ipa": "/ˈɪnvɔɪs/"}, {"topic": "Tài chính & Kế toán", "word": "budget", "pos": "n", "meaning": "ngân sách", "example": "The marketing budget was cut this quarter.", "ipa": "/ˈbʌdʒɪt/"}, {"topic": "Tài chính & Kế toán", "word": "revenue", "pos": "n", "meaning": "doanh thu", "example": "Annual revenue increased by ten percent.", "ipa": "/ˈrɛvəˌnuː/"}, {"topic": "Tài chính & Kế toán", "word": "expense", "pos": "n", "meaning": "chi phí", "example": "Travel expenses must be approved in advance.", "ipa": "/ɪkˈspɛns/"}, {"topic": "Tài chính & Kế toán", "word": "profit", "pos": "n", "meaning": "lợi nhuận", "example": "The company reported a record profit this year.", "ipa": "/ˈprɑːfɪt/"}, {"topic": "Tài chính & Kế toán", "word": "loss", "pos": "n", "meaning": "khoản lỗ", "example": "The firm suffered a loss in the first quarter.", "ipa": "/lɔːs/"}, {"topic": "Tài chính & Kế toán", "word": "installment", "pos": "n", "meaning": "khoản trả góp", "example": "You can pay for the equipment in monthly installments.", "ipa": "/ɪnˈstɔːlmənt/"}, {"topic": "Tài chính & Kế toán", "word": "discount", "pos": "n", "meaning": "giảm giá", "example": "We offer a ten percent discount for bulk orders.", "ipa": "/ˈdɪskaʊnt/"}, {"topic": "Tài chính & Kế toán", "word": "transaction", "pos": "n", "meaning": "giao dịch", "example": "All transactions are recorded in the system.", "ipa": "/trænˈzækʃən/"}, {"topic": "Tài chính & Kế toán", "word": "overdue", "pos": "adj", "meaning": "quá hạn", "example": "Your payment is now two weeks overdue.", "ipa": "/ˌoʊvərˈduː/"}, {"topic": "Marketing & Bán hàng", "word": "advertise", "pos": "v", "meaning": "quảng cáo", "example": "The store advertised its sale on social media.", "ipa": "/ˈædvərˌtaɪz/"}, {"topic": "Marketing & Bán hàng", "word": "campaign", "pos": "n", "meaning": "chiến dịch", "example": "The new campaign targets young professionals.", "ipa": "/kæmˈpeɪn/"}, {"topic": "Marketing & Bán hàng", "word": "customer", "pos": "n", "meaning": "khách hàng", "example": "Customer satisfaction is our top priority.", "ipa": "/ˈkʌstəmər/"}, {"topic": "Marketing & Bán hàng", "word": "launch", "pos": "v/n", "meaning": "ra mắt (sản phẩm)", "example": "The company will launch a new product next month.", "ipa": "/lɔːntʃ/"}, {"topic": "Marketing & Bán hàng", "word": "competitor", "pos": "n", "meaning": "đối thủ cạnh tranh", "example": "Our main competitor lowered its prices recently.", "ipa": "/kəmˈpɛtɪtər/"}, {"topic": "Marketing & Bán hàng", "word": "brand", "pos": "n", "meaning": "thương hiệu", "example": "The brand is well known for quality products.", "ipa": "/brænd/"}, {"topic": "Marketing & Bán hàng", "word": "target audience", "pos": "n", "meaning": "đối tượng khách hàng mục tiêu", "example": "Our target audience is mostly college students.", "ipa": "/ˈtɑːrɡɪt ˈɔːdiəns/"}, {"topic": "Marketing & Bán hàng", "word": "demand", "pos": "n", "meaning": "nhu cầu", "example": "Demand for the product rose sharply this year.", "ipa": "/dɪˈmænd/"}, {"topic": "Marketing & Bán hàng", "word": "survey", "pos": "n/v", "meaning": "khảo sát", "example": "We conducted a survey to understand customer needs.", "ipa": "/ˈsɜːrveɪ/"}, {"topic": "Marketing & Bán hàng", "word": "loyal", "pos": "adj", "meaning": "trung thành", "example": "The store has many loyal customers.", "ipa": "/ˈlɔɪəl/"}, {"topic": "Vận chuyển & Logistics", "word": "shipment", "pos": "n", "meaning": "lô hàng", "example": "The shipment is expected to arrive on Friday.", "ipa": "/ˈʃɪpmənt/"}, {"topic": "Vận chuyển & Logistics", "word": "warehouse", "pos": "n", "meaning": "nhà kho", "example": "The goods are stored in a warehouse near the port.", "ipa": "/ˈwɛrhaʊs/"}, {"topic": "Vận chuyển & Logistics", "word": "inventory", "pos": "n", "meaning": "hàng tồn kho", "example": "We need to check the inventory before ordering more.", "ipa": "/ˈɪnvənˌtɔːri/"}, {"topic": "Vận chuyển & Logistics", "word": "supplier", "pos": "n", "meaning": "nhà cung cấp", "example": "We switched to a new supplier last month.", "ipa": "/səˈplaɪər/"}, {"topic": "Vận chuyển & Logistics", "word": "damaged", "pos": "adj", "meaning": "bị hư hỏng", "example": "Some of the products arrived damaged.", "ipa": "/ˈdæmɪdʒd/"}, {"topic": "Vận chuyển & Logistics", "word": "delivery", "pos": "n", "meaning": "sự giao hàng", "example": "Delivery usually takes three to five business days.", "ipa": "/dɪˈlɪvəri/"}, {"topic": "Vận chuyển & Logistics", "word": "packaging", "pos": "n", "meaning": "bao bì, đóng gói", "example": "The new packaging is more eco-friendly.", "ipa": "/ˈpækɪdʒɪŋ/"}, {"topic": "Vận chuyển & Logistics", "word": "quantity", "pos": "n", "meaning": "số lượng", "example": "Please confirm the quantity before we ship the order.", "ipa": "/ˈkwɑːntəti/"}, {"topic": "Vận chuyển & Logistics", "word": "tracking number", "pos": "n", "meaning": "mã theo dõi đơn hàng", "example": "You can check the status with the tracking number.", "ipa": "/ˈtrækɪŋ ˈnʌmbər/"}, {"topic": "Vận chuyển & Logistics", "word": "distributor", "pos": "n", "meaning": "nhà phân phối", "example": "The company works with distributors across the country.", "ipa": "/dɪˈstrɪbjətər/"}];
+  var LEITNER_DAYS = {1:1,2:3,3:7,4:14,5:30};
+
+  function todayStr(){
+    var d = new Date();
+    return new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,10);
+  }
+  function addDays(dateStr, n){
+    var d = new Date(dateStr + "T00:00:00");
+    d.setDate(d.getDate() + n);
+    return new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,10);
+  }
+  function cardId(i){ return "c" + i; }
+  function esc(s){ return String(s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+  function reEsc(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+  function blankExample(word, example){
+    var forms = [word, word+"s", word+"es", word+"d", word+"ed", word+"ing"];
+    var seen = {}, candidates = [];
+    forms.forEach(function(f){ if(!seen[f]){ seen[f]=true; candidates.push(f); } });
+    candidates.sort(function(a,b){ return b.length - a.length; });
+    for(var k=0;k<candidates.length;k++){
+      var re = new RegExp("\\b" + reEsc(candidates[k]) + "\\b", "i");
+      var m = example.match(re);
+      if(m) return example.slice(0, m.index) + "_____" + example.slice(m.index + m[0].length);
+    }
+    return null;
+  }
+
+  var TOPICS = [];
+  VOCAB.forEach(function(v){ if(TOPICS.indexOf(v.topic)===-1) TOPICS.push(v.topic); });
+
+  var QUIZ_TYPES = [
+    { id:"w2m", label:"Từ → Nghĩa", desc:"Xem từ tiếng Anh, chọn nghĩa tiếng Việt đúng." },
+    { id:"m2w", label:"Nghĩa → Từ", desc:"Xem nghĩa tiếng Việt, chọn từ tiếng Anh đúng." },
+    { id:"cloze", label:"Điền vào câu", desc:"Chọn từ đúng để điền vào chỗ trống trong câu ví dụ." },
+    { id:"type", label:"Gõ từ", desc:"Xem nghĩa tiếng Việt, tự gõ ra từ tiếng Anh." },
+    { id:"listen", label:"Nghe & chọn", desc:"Nghe phát âm rồi chọn nghĩa tiếng Việt đúng." },
+    { id:"speak", label:"Phát âm (mic)", desc:"Xem từ tiếng Anh + phiên âm IPA, đọc to vào micro. Chấm cực gắt (đúng chữ + độ tin cậy cao), đọc lại bao nhiêu lần cũng được để luyện, và nghe lại chính giọng bạn vừa đọc." }
+  ];
+  var speechAvailable = (typeof window !== "undefined") && ("speechSynthesis" in window);
+  var RecognitionCtor = (typeof window !== "undefined") && (window.SpeechRecognition || window.webkitSpeechRecognition);
+  var recognitionAvailable = !!RecognitionCtor;
+
+  var STORAGE_KEY = "toeic_flashcard_v1";
+  function loadLocal(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return;
+      var data = JSON.parse(raw);
+      if(data && data.progress) state.progress = data.progress;
+      if(data && data.meta) Object.assign(state.meta, data.meta);
+      if(data && data.quizHistory) state.quizHistory = data.quizHistory;
+    }catch(e){}
+  }
+  function saveLocal(){
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ progress: state.progress, meta: state.meta, quizHistory: state.quizHistory }));
+    }catch(e){}
+  }
+
+  var state = {
+    progress: {},
+    meta: { streak:0, lastStudyDate:null, totalReviews:0 },
+    quizHistory: [],
+    tab: "study",
+    topic: "all",
+    mode: "due",
+    shuffle: false,
+    queue: [],
+    idx: 0,
+    flipped: false,
+    quiz: { phase:"setup", topic:"all", count:10, type:"w2m", questions:[], qi:0, correct:0 }
+  };
+
+  function shuffleArr(arr){
+    for(var i=arr.length-1;i>0;i--){
+      var j = Math.floor(Math.random()*(i+1));
+      var t = arr[i]; arr[i]=arr[j]; arr[j]=t;
+    }
+    return arr;
+  }
+  function topicOptionsHtml(selected){
+    var sel = selected || "all";
+    return '<option value="all"' + (sel==="all" ? " selected" : "") + '>Tất cả chủ đề</option>' +
+      TOPICS.map(function(t){ return '<option value="' + esc(t) + '"' + (sel===t ? " selected" : "") + '>' + esc(t) + '</option>'; }).join("");
+  }
+
+  function isDue(i){
+    var p = state.progress[cardId(i)];
+    if(!p) return true;
+    return p.nextDue <= todayStr();
+  }
+
+  function buildQueue(){
+    var idxs = VOCAB.map(function(_,i){ return i; });
+    if(state.topic !== "all") idxs = idxs.filter(function(i){ return VOCAB[i].topic === state.topic; });
+    if(state.mode === "due") idxs = idxs.filter(isDue);
+    if(state.shuffle) shuffleArr(idxs);
+    state.queue = idxs;
+    state.idx = 0;
+    state.flipped = false;
+  }
+
+  // ---------- render: study ----------
+  var stageEl = document.getElementById("stage");
+  var counterEl = document.getElementById("counter");
+  var actionsEl = document.getElementById("actions");
+
+  function renderStudy(){
+    var total = state.queue.length;
+    if(total === 0){
+      counterEl.textContent = "";
+      actionsEl.hidden = true;
+      stageEl.innerHTML = state.mode === "due"
+        ? '<div class="empty"><div class="big">🎉</div><p>Bạn đã ôn hết các thẻ đến hạn hôm nay' + (state.topic!=="all" ? " trong chủ đề này" : "") + '!</p><button id="goAllBtn">Ôn thêm — Tất cả 80 từ</button></div>'
+        : '<div class="empty"><div class="big">📭</div><p>Không có thẻ nào phù hợp với lựa chọn hiện tại.</p></div>';
+      var b = document.getElementById("goAllBtn");
+      if(b) b.addEventListener("click", function(){ setMode("all"); });
+      return;
+    }
+    if(state.idx >= total){
+      counterEl.textContent = "";
+      actionsEl.hidden = true;
+      stageEl.innerHTML = '<div class="empty"><div class="big">✅</div><p>Xong lượt này — bạn vừa ôn qua ' + total + ' thẻ.</p><button id="againBtn">Học lại lượt này</button></div>';
+      document.getElementById("againBtn").addEventListener("click", function(){ buildQueue(); renderStudy(); });
+      return;
+    }
+    counterEl.textContent = "Thẻ " + (state.idx+1) + " / " + total;
+    var i = state.queue[state.idx];
+    var v = VOCAB[i];
+    var prog = state.progress[cardId(i)];
+    var box = prog ? prog.box : 0;
+    var dots = "";
+    for(var d=1; d<=5; d++){ dots += '<span class="dot' + (d<=box ? ' on' : '') + '"></span>'; }
+    var boxLabel = box === 0 ? "Thẻ mới" : ("Hộp " + box + " · ôn lại sau " + LEITNER_DAYS[box] + " ngày");
+
+    stageEl.innerHTML =
+      '<div class="card' + (state.flipped ? " flipped" : "") + '" id="flipCard">' +
+        '<div class="face face-front"><div class="face-inner">' +
+          '<div class="tagrow"><span class="tag">' + esc(v.topic) + '</span><span class="postag">' + esc(v.pos) + '</span></div>' +
+          '<div class="word">' + esc(v.word) + '</div>' +
+          (v.ipa ? '<div class="ipa">' + esc(v.ipa) + '</div>' : '') +
+          '<div class="flipnote">Nhấn để xem nghĩa</div>' +
+        '</div></div>' +
+        '<div class="face face-back"><div class="face-inner">' +
+          '<div class="tagrow"><span class="postag">' + esc(v.pos) + '</span></div>' +
+          '<div><div class="meaning">' + esc(v.meaning) + '</div><div class="example">&ldquo;' + esc(v.example) + '&rdquo;</div></div>' +
+          '<div class="boxrow"><div class="dots">' + dots + '</div><span>' + boxLabel + '</span></div>' +
+        '</div></div>' +
+      '</div>';
+
+    document.getElementById("flipCard").addEventListener("click", flipCard);
+    actionsEl.hidden = !state.flipped;
+  }
+
+  function flipCard(){
+    if(state.idx >= state.queue.length) return;
+    state.flipped = !state.flipped;
+    var el = document.getElementById("flipCard");
+    if(el) el.classList.toggle("flipped", state.flipped);
+    actionsEl.hidden = !state.flipped;
+  }
+
+  function applyReview(i, known){
+    var id = cardId(i);
+    var prev = state.progress[id] || { box:0, reviews:0 };
+    var box = known ? Math.min((prev.box||0)+1, 5) : 1;
+    var today = todayStr();
+    var rec = { box: box, reviews: (prev.reviews||0)+1, lastReviewed: today, nextDue: addDays(today, LEITNER_DAYS[box]) };
+    state.progress[id] = rec;
+    saveProgress(id, rec);
+    bumpMeta();
+  }
+
+  function markCard(known){
+    if(state.idx >= state.queue.length || !state.flipped) return;
+    var i = state.queue[state.idx];
+    applyReview(i, known);
+    state.idx++;
+    state.flipped = false;
+    renderStudy();
+  }
+
+  function saveProgress(id, rec){
+    saveLocal();
+  }
+  function saveMeta(){
+    saveLocal();
+  }
+  function bumpMeta(){
+    var today = todayStr();
+    if(state.meta.lastStudyDate !== today){
+      var yest = addDays(today, -1);
+      state.meta.streak = (state.meta.lastStudyDate === yest) ? (state.meta.streak||0)+1 : 1;
+      state.meta.lastStudyDate = today;
+    }
+    state.meta.totalReviews = (state.meta.totalReviews||0)+1;
+    saveMeta();
+  }
+
+  // ---------- quiz ----------
+  var quizStageEl = document.getElementById("quizStage");
+
+  function otherIdx(i){ return VOCAB.map(function(_,j){ return j; }).filter(function(j){ return j!==i; }); }
+  function pickOptions(i, getter){
+    var correct = getter(VOCAB[i]);
+    var pool = otherIdx(i).filter(function(j){ return getter(VOCAB[j]) !== correct; });
+    shuffleArr(pool);
+    var opts = pool.slice(0,3).map(function(j){ return getter(VOCAB[j]); });
+    opts.push(correct);
+    shuffleArr(opts);
+    return { options: opts, correct: correct };
+  }
+  function makeQuestion(type, i){
+    if(type === "w2m" || type === "listen"){
+      var r = pickOptions(i, function(v){ return v.meaning; });
+      return { type:type, i:i, options:r.options, correct:r.correct, answered:false, chosen:null, spoken:false };
+    }
+    if(type === "m2w"){
+      var r2 = pickOptions(i, function(v){ return v.word; });
+      return { type:type, i:i, options:r2.options, correct:r2.correct, answered:false, chosen:null };
+    }
+    if(type === "cloze"){
+      var r3 = pickOptions(i, function(v){ return v.word; });
+      return { type:type, i:i, sentence: blankExample(VOCAB[i].word, VOCAB[i].example) || VOCAB[i].example, options:r3.options, correct:r3.correct, answered:false, chosen:null };
+    }
+    if(type === "type"){
+      return { type:"type", i:i, correct: VOCAB[i].word, answered:false, value:"", isCorrect:null };
+    }
+    return { type:"speak", i:i, correct: VOCAB[i].word, answered:false, transcript:"", isCorrect:null, firstCorrect:null, attempts:0, listening:false, errorMsg:"" };
+  }
+
+  function revokePendingRecordings(){
+    (state.quiz.questions || []).forEach(function(qq){
+      if(qq.recordingUrl){ try{ URL.revokeObjectURL(qq.recordingUrl); }catch(e){} }
+    });
+  }
+  function buildQuiz(){
+    revokePendingRecordings();
+    var type = state.quiz.type;
+    var pool = VOCAB.map(function(_,i){ return i; });
+    if(state.quiz.topic !== "all") pool = pool.filter(function(i){ return VOCAB[i].topic === state.quiz.topic; });
+    if(type === "cloze") pool = pool.filter(function(i){ return !!blankExample(VOCAB[i].word, VOCAB[i].example); });
+    shuffleArr(pool);
+    var n = state.quiz.count === "all" ? pool.length : Math.min(state.quiz.count, pool.length);
+    pool = pool.slice(0, n);
+    state.quiz.questions = pool.map(function(i){ return makeQuestion(type, i); });
+    state.quiz.qi = 0;
+    state.quiz.correct = 0;
+    state.quiz.phase = "active";
+  }
+  function startQuiz(){ buildQuiz(); renderQuiz(); }
+  function answerQuiz(oi){
+    var q = state.quiz.questions[state.quiz.qi];
+    if(!q || q.answered || q.type === "type") return;
+    q.answered = true;
+    q.chosen = oi;
+    var known = q.options[oi] === q.correct;
+    if(known) state.quiz.correct++;
+    applyReview(q.i, known);
+    renderQuiz();
+  }
+  function submitTyped(){
+    var q = state.quiz.questions[state.quiz.qi];
+    if(!q || q.answered || q.type !== "type") return;
+    var inputEl = document.getElementById("quizTypeInput");
+    var val = inputEl ? inputEl.value.trim() : "";
+    q.value = val;
+    q.answered = true;
+    var known = val.length>0 && val.toLowerCase() === q.correct.toLowerCase();
+    q.isCorrect = known;
+    if(known) state.quiz.correct++;
+    applyReview(q.i, known);
+    renderQuiz();
+  }
+  function speakCurrent(){
+    var q = state.quiz.questions[state.quiz.qi];
+    if(!q) return;
+    q.spoken = true;
+    try{
+      if(speechAvailable){
+        window.speechSynthesis.cancel();
+        var u = new SpeechSynthesisUtterance(VOCAB[q.i].word);
+        u.lang = "en-US";
+        u.rate = 0.85;
+        window.speechSynthesis.speak(u);
+      }
+    }catch(e){}
+    renderQuiz();
+  }
+
+  function normalizeWord(s){ return String(s||"").toLowerCase().replace(/[^a-z]/g, ""); }
+  var RECOGNITION_ERRORS = {
+    "not-allowed": "Trình duyệt chưa được cấp quyền micro.",
+    "no-speech": "Không nghe thấy giọng nói, thử lại nhé.",
+    "audio-capture": "Không tìm thấy micro.",
+    "network": "Lỗi kết nối mạng khi nhận diện giọng nói.",
+    "aborted": "Đã hủy ghi âm."
+  };
+  var recorderAvailable = (typeof navigator !== "undefined") && navigator.mediaDevices && navigator.mediaDevices.getUserMedia && (typeof window.MediaRecorder !== "undefined");
+  function startListening(){
+    var cur = state.quiz.questions[state.quiz.qi];
+    if(!cur || cur.type !== "speak" || cur.listening) return;
+    if(!recognitionAvailable){
+      cur.errorMsg = "Trình duyệt này không hỗ trợ nhận diện giọng nói.";
+      renderQuiz();
+      return;
+    }
+    var r;
+    try{ r = new RecognitionCtor(); }catch(e){ cur.errorMsg = "Không khởi tạo được micro."; renderQuiz(); return; }
+    r.lang = "en-US";
+    r.maxAlternatives = 1;
+    r.interimResults = false;
+    cur.listening = true;
+    cur.errorMsg = "";
+    cur.recordingPending = recorderAvailable;
+    renderQuiz();
+
+    var mediaRecorder = null, chunks = [], micStream = null, stopped = false, handled = false;
+    function cleanupStream(){
+      if(micStream){ micStream.getTracks().forEach(function(t){ t.stop(); }); micStream = null; }
+    }
+    function finishRecording(){
+      if(stopped) return;
+      stopped = true;
+      if(mediaRecorder && mediaRecorder.state !== "inactive"){
+        try{ mediaRecorder.stop(); }catch(e){ cleanupStream(); cur.recordingPending = false; }
+      } else {
+        cleanupStream();
+        cur.recordingPending = false;
+      }
+    }
+    if(recorderAvailable){
+      navigator.mediaDevices.getUserMedia({ audio:true }).then(function(stream){
+        micStream = stream;
+        try{
+          mediaRecorder = new MediaRecorder(stream);
+          mediaRecorder.ondataavailable = function(e){ if(e.data && e.data.size>0) chunks.push(e.data); };
+          mediaRecorder.onstop = function(){
+            if(chunks.length){
+              var blob = new Blob(chunks, { type: mediaRecorder.mimeType || "audio/webm" });
+              if(cur.recordingUrl) URL.revokeObjectURL(cur.recordingUrl);
+              cur.recordingUrl = URL.createObjectURL(blob);
+            }
+            cur.recordingPending = false;
+            cleanupStream();
+            renderQuiz();
+          };
+          mediaRecorder.start();
+        }catch(e){ cleanupStream(); cur.recordingPending = false; }
+      }).catch(function(){ cur.recordingPending = false; });
+    }
+
+    r.onresult = function(event){
+      handled = true;
+      var alt = (event.results && event.results[0] && event.results[0][0]) ? event.results[0][0] : null;
+      var transcript = alt ? alt.transcript.trim() : "";
+      var confidence = alt ? alt.confidence : 0;
+      cur.transcript = transcript;
+      finishRecording();
+      gradeSpeak(cur, transcript, confidence);
+    };
+    r.onerror = function(event){
+      handled = true;
+      cur.listening = false;
+      cur.errorMsg = RECOGNITION_ERRORS[event.error] || ("Lỗi: " + event.error);
+      finishRecording();
+      renderQuiz();
+    };
+    r.onend = function(){
+      if(!handled){ cur.listening = false; finishRecording(); renderQuiz(); }
+    };
+    try{ r.start(); }catch(e){ handled = true; cur.listening = false; cur.errorMsg = "Không thể bắt đầu ghi âm."; finishRecording(); renderQuiz(); }
+  }
+  var SPEAK_CONFIDENCE_THRESHOLD = 0.88;
+  function gradeSpeak(cur, transcript, confidence){
+    var isRetry = cur.answered;
+    cur.listening = false;
+    cur.answered = true;
+    cur.attempts = (cur.attempts||0) + 1;
+    var textMatch = normalizeWord(transcript) === normalizeWord(cur.correct) && normalizeWord(transcript).length > 0;
+    var hasConf = typeof confidence === "number" && confidence > 0;
+    cur.confidence = confidence;
+    cur.confKnown = hasConf;
+    var confOk = !hasConf || confidence >= SPEAK_CONFIDENCE_THRESHOLD;
+    var known = textMatch && confOk;
+    cur.isCorrect = known;
+    if(!isRetry){
+      // Chỉ lần đọc đầu tiên mới tính điểm quiz + cập nhật lịch ôn Leitner.
+      // Các lần đọc lại sau đó chỉ để luyện, không tính điểm lại.
+      cur.firstCorrect = known;
+      if(known) state.quiz.correct++;
+      applyReview(cur.i, known);
+    }
+    renderQuiz();
+  }
+
+  function nextQuestion(){
+    if(state.quiz.qi < state.quiz.questions.length - 1){
+      state.quiz.qi++;
+      renderQuiz();
+    } else {
+      finishQuiz();
+    }
+  }
+  function finishQuiz(){
+    state.quiz.phase = "done";
+    var record = { ts: Date.now(), date: todayStr(), topic: state.quiz.topic, type: state.quiz.type, total: state.quiz.questions.length, correct: state.quiz.correct };
+    state.quizHistory.unshift(record);
+    state.quizHistory = state.quizHistory.slice(0, 5);
+    saveQuizAttempt(record);
+    renderQuiz();
+  }
+  function saveQuizAttempt(record){
+    saveLocal();
+  }
+
+  function quizTypeLabel(id){
+    var t = QUIZ_TYPES.filter(function(x){ return x.id===id; })[0];
+    return t ? t.label : id;
+  }
+  function optionsHtml(cur, mono){
+    return '<div class="qoptions">' + cur.options.map(function(opt, oi){
+      var cls = "qoption" + (mono ? " mono" : "");
+      if(cur.answered){
+        cls += " locked";
+        if(opt === cur.correct) cls += " correct";
+        else if(oi === cur.chosen) cls += " wrong";
+      }
+      return '<button type="button" class="' + cls + '" data-i="' + oi + '">' + esc(opt) + '</button>';
+    }).join("") + '</div>';
+  }
+
+  function renderQuiz(){
+    var q = state.quiz;
+    var hintEl = document.getElementById("quizHint");
+    if(q.phase === "setup"){
+      hintEl.hidden = true;
+      var availableTypes = QUIZ_TYPES.filter(function(t){
+        if(t.id === "listen") return speechAvailable;
+        if(t.id === "speak") return recognitionAvailable;
+        return true;
+      });
+      var curType = availableTypes.filter(function(t){ return t.id===q.type; })[0] || availableTypes[0];
+      quizStageEl.innerHTML =
+        '<div class="quizsetup">' +
+          '<div class="row"><label>Loại kiểm tra</label><select id="quizTypeSelect" class="select">' +
+            availableTypes.map(function(t){ return '<option value="' + t.id + '"' + (q.type===t.id ? " selected" : "") + '>' + esc(t.label) + '</option>'; }).join("") +
+          '</select><div class="typedesc">' + esc(curType.desc) + '</div></div>' +
+          '<div class="row"><label>Chủ đề</label><select id="quizTopicSelect" class="select">' + topicOptionsHtml(q.topic) + '</select></div>' +
+          '<div class="row"><label>Số câu</label><select id="quizCount" class="select">' +
+            [10,20,40].map(function(n){ return '<option value="' + n + '"' + (q.count===n ? " selected" : "") + '>' + n + ' câu</option>'; }).join("") +
+            '<option value="all"' + (q.count==="all" ? " selected" : "") + '>Tất cả từ đã chọn</option>' +
+          '</select></div>' +
+          '<button type="button" class="startbtn" id="quizStartBtn">Bắt đầu kiểm tra</button>' +
+        '</div>';
+      return;
+    }
+    if(q.phase === "active"){
+      var i = q.qi, total = q.questions.length, cur = q.questions[i];
+      var v = VOCAB[cur.i];
+      hintEl.hidden = false;
+      hintEl.textContent = cur.type === "type" ? "Nhấn Enter để chấm / sang câu tiếp theo" : cur.type === "speak" ? "Bấm micro rồi nói to, rõ từ tiếng Anh" : "Phím 1–4 để chọn đáp án · Enter để sang câu tiếp theo";
+      var head = '<div class="qprogress">Câu ' + (i+1) + ' / ' + total + ' · Đúng ' + q.correct + '</div>';
+      var body = "";
+      if(cur.type === "w2m"){
+        body += '<div class="qword"><div class="tagrow"><span class="tag">' + esc(v.topic) + '</span><span class="postag">' + esc(v.pos) + '</span></div><div class="word">' + esc(v.word) + '</div></div>';
+        body += optionsHtml(cur, false);
+      } else if(cur.type === "m2w"){
+        body += '<div class="qword"><div class="tagrow"><span class="tag">' + esc(v.topic) + '</span><span class="postag">' + esc(v.pos) + '</span></div><div class="meaning" style="margin-top:6px;">' + esc(v.meaning) + '</div></div>';
+        body += optionsHtml(cur, true);
+      } else if(cur.type === "cloze"){
+        body += '<div class="qword"><div class="tagrow"><span class="tag">' + esc(v.topic) + '</span><span class="postag">' + esc(v.pos) + '</span></div><div class="clozesentence">' + esc(cur.sentence) + '</div></div>';
+        body += optionsHtml(cur, true);
+      } else if(cur.type === "listen"){
+        body += '<div class="qword"><div class="tagrow"><span class="tag">' + esc(v.topic) + '</span><span class="postag">' + esc(v.pos) + '</span></div>' +
+          '<button type="button" class="listenbtn" id="quizListenBtn">🔊 ' + (cur.spoken ? "Nghe lại" : "Nghe từ") + '</button>' +
+          (cur.answered ? '<div class="word" style="margin-top:10px;">' + esc(v.word) + '</div>' + (v.ipa ? '<div class="ipa">' + esc(v.ipa) + '</div>' : '') : '') +
+        '</div>';
+        body += optionsHtml(cur, false);
+      } else if(cur.type === "type"){
+        body += '<div class="qword"><div class="tagrow"><span class="tag">' + esc(v.topic) + '</span><span class="postag">' + esc(v.pos) + '</span></div><div class="meaning" style="margin-top:6px;">' + esc(v.meaning) + '</div></div>';
+        if(!cur.answered){
+          body += '<div class="typewrap"><input type="text" id="quizTypeInput" class="typeinput" placeholder="Gõ từ tiếng Anh…" autocomplete="off" autocapitalize="off" spellcheck="false"><button type="button" id="quizTypeSubmit" class="typesubmit">Kiểm tra</button></div>';
+        } else {
+          body += '<div class="typeresult ' + (cur.isCorrect ? "ok" : "bad") + '">' + (cur.isCorrect ? "✓ Chính xác — " : "✕ Chưa đúng — đáp án: ") + '<b>' + esc(cur.correct) + '</b></div>' +
+            (cur.value ? '<div class="typeyour">Bạn đã gõ: <b>' + esc(cur.value) + '</b></div>' : '<div class="typeyour">Bạn để trống</div>');
+        }
+      } else if(cur.type === "speak"){
+        body += '<div class="qword"><div class="tagrow"><span class="tag">' + esc(v.topic) + '</span><span class="postag">' + esc(v.pos) + '</span></div><div class="word">' + esc(v.word) + '</div>' +
+          (v.ipa ? '<div class="ipa">' + esc(v.ipa) + '</div>' : '') +
+          '<div class="meaning" style="margin-top:4px;font-size:15px;">' + esc(v.meaning) + '</div></div>';
+        if(cur.answered){
+          var confStr = cur.confKnown ? (" · độ tin cậy " + Math.round(cur.confidence*100) + "%") : "";
+          body += '<div class="typeresult ' + (cur.isCorrect ? "ok" : "bad") + '">' + (cur.isCorrect ? "✓ Đạt" : "✕ Chưa đạt") + ' — đáp án: <b>' + esc(cur.correct) + '</b></div>' +
+            (cur.transcript ? '<div class="typeyour">Máy nghe được: <b>' + esc(cur.transcript) + '</b>' + esc(confStr) + '</div>' : '<div class="typeyour">Không nhận diện được giọng nói</div>') +
+            (cur.confKnown && cur.transcript && normalizeWord(cur.transcript)===normalizeWord(cur.correct) && !cur.isCorrect ? '<p class="hint">Nhận đúng chữ nhưng độ tin cậy dưới ' + Math.round(SPEAK_CONFIDENCE_THRESHOLD*100) + '% — coi như chưa đạt, nói to rõ và chắc âm hơn rồi thử lại.</p>' : '') +
+            (cur.recordingUrl
+              ? '<div class="playback"><span class="playback-label">Giọng bạn vừa nói:</span><audio controls src="' + esc(cur.recordingUrl) + '"></audio></div>'
+              : (cur.recordingPending ? '<p class="hint">Đang xử lý bản ghi…</p>' : '')) +
+            (cur.attempts > 1 ? '<p class="hint">Đã đọc lại ' + cur.attempts + ' lần · điểm quiz tính theo lần đầu tiên: ' + (cur.firstCorrect ? "✓ Đạt" : "✕ Chưa đạt") + '.</p>' : '');
+        }
+        var micLabel = cur.listening ? '🎙️ Đang nghe…' : (cur.answered ? '🔁 Đọc lại (luyện thêm)' : '🎙️ Bấm để nói');
+        body += '<div class="speakwrap">' +
+          '<button type="button" class="listenbtn small" id="quizRefBtn">🔊 Nghe mẫu</button>' +
+          '<button type="button" class="micbtn' + (cur.listening ? ' listening' : '') + '" id="quizMicBtn">' + micLabel + '</button>' +
+        '</div>';
+        if(cur.errorMsg) body += '<p class="hint" style="color:var(--warm-ink);">' + esc(cur.errorMsg) + '</p>';
+      }
+      if(cur.answered && !cur.listening){
+        body += '<div class="qnext"><button type="button" id="quizNextBtn">' + (i < total-1 ? "Câu tiếp theo →" : "Xem kết quả") + '</button></div>';
+      }
+      quizStageEl.innerHTML = head + body;
+      if(cur.type === "type" && !cur.answered){
+        var inp = document.getElementById("quizTypeInput");
+        if(inp) inp.focus();
+      }
+      return;
+    }
+    // done
+    hintEl.hidden = true;
+    var pct = Math.round(q.correct / q.questions.length * 100);
+    var missed = q.questions.filter(function(qq){
+      if(qq.type === "speak") return !qq.firstCorrect;
+      if(qq.type === "type") return !qq.isCorrect;
+      return qq.options[qq.chosen] !== qq.correct;
+    });
+    quizStageEl.innerHTML =
+      '<div class="qresult">' +
+        '<div><div class="qscore">' + q.correct + '/' + q.questions.length + '</div><div style="color:var(--ink-soft);font-size:13px;">Đúng ' + pct + '% · ' + esc(quizTypeLabel(q.type)) + '</div></div>' +
+        (missed.length
+          ? '<div class="qmissed">' + missed.map(function(m){
+              var mv = VOCAB[m.i];
+              var audio = m.recordingUrl ? '<audio controls src="' + esc(m.recordingUrl) + '" class="missaudio"></audio>' : '';
+              return '<div class="item"><div><b>' + esc(mv.word) + '</b> — ' + esc(mv.meaning) + '</div>' + audio + '</div>';
+            }).join("") + '</div>'
+          : '<p style="color:var(--ink-soft);font-size:13px;">Hoàn hảo — không sai câu nào! 🎯</p>') +
+        '<div class="btnrow"><button type="button" id="quizBackBtn">Đổi lựa chọn</button><button type="button" class="primary" id="quizRetryBtn">Làm lại</button></div>' +
+      '</div>';
+  }
+
+  quizStageEl.addEventListener("click", function(e){
+    if(e.target.closest("#quizStartBtn")){ startQuiz(); return; }
+    if(e.target.closest("#quizListenBtn")){ speakCurrent(); return; }
+    if(e.target.closest("#quizRefBtn")){ speakCurrent(); return; }
+    if(e.target.closest("#quizMicBtn")){ startListening(); return; }
+    if(e.target.closest("#quizTypeSubmit")){ submitTyped(); return; }
+    var opt = e.target.closest(".qoption");
+    if(opt && !opt.classList.contains("locked")){ answerQuiz(parseInt(opt.dataset.i,10)); return; }
+    if(e.target.closest("#quizNextBtn")){ nextQuestion(); return; }
+    if(e.target.closest("#quizRetryBtn")){ buildQuiz(); renderQuiz(); return; }
+    if(e.target.closest("#quizBackBtn")){ state.quiz.phase = "setup"; renderQuiz(); return; }
+  });
+  quizStageEl.addEventListener("change", function(e){
+    if(e.target.id === "quizTopicSelect") state.quiz.topic = e.target.value;
+    if(e.target.id === "quizCount") state.quiz.count = e.target.value === "all" ? "all" : parseInt(e.target.value, 10);
+    if(e.target.id === "quizTypeSelect"){ state.quiz.type = e.target.value; renderQuiz(); }
+  });
+
+  // ---------- render: progress ----------
+  function renderProgress(){
+    var boxCounts = {0:0,1:0,2:0,3:0,4:0,5:0};
+    VOCAB.forEach(function(_,i){
+      var p = state.progress[cardId(i)];
+      boxCounts[p ? p.box : 0]++;
+    });
+    var dueToday = VOCAB.filter(function(_,i){ return isDue(i); }).length;
+    var mastered = boxCounts[5];
+    var streak = state.meta.streak || 0;
+
+    document.getElementById("statTiles").innerHTML = [
+      ["80", "Tổng số thẻ"],
+      [String(mastered), "Đã thuộc (Hộp 5)"],
+      [String(dueToday), "Đến hạn hôm nay"],
+      [String(streak), "Chuỗi ngày học"]
+    ].map(function(t){
+      return '<div class="stattile"><div class="n">' + t[0] + '</div><div class="l">' + t[1] + '</div></div>';
+    }).join("");
+
+    var boxRows = "";
+    for(var b=0; b<=5; b++){
+      var label = b===0 ? "Hộp 0" : "Hộp " + b;
+      var sub = b===0 ? "chưa học" : LEITNER_DAYS[b] + " ngày";
+      var count = boxCounts[b];
+      var pct = Math.round(count/80*100);
+      boxRows += '<div class="boxline"><div>' + label + '<div class="lbl">' + sub + '</div></div>' +
+        '<div class="barbg"><div class="barfg" style="width:' + pct + '%"></div></div>' +
+        '<div class="n">' + count + '</div></div>';
+    }
+    document.getElementById("boxRows").innerHTML = boxRows;
+
+    var topicRows = "";
+    TOPICS.forEach(function(topic){
+      var idxs = VOCAB.map(function(_,i){return i;}).filter(function(i){ return VOCAB[i].topic===topic; });
+      var reviewed = idxs.filter(function(i){ return !!state.progress[cardId(i)]; }).length;
+      var topicMastered = idxs.filter(function(i){ var p=state.progress[cardId(i)]; return p && p.box===5; }).length;
+      var pct = Math.round(reviewed/idxs.length*100);
+      topicRows += '<div class="topicrow"><div class="trow-top"><span>' + esc(topic) + '</span><span>' + topicMastered + '/' + idxs.length + ' thuộc</span></div>' +
+        '<div class="barbg"><div class="barfg" style="width:' + pct + '%"></div></div></div>';
+    });
+    document.getElementById("topicRows").innerHTML = topicRows;
+
+    var histWrap = document.getElementById("quizHistoryWrap");
+    if(state.quizHistory && state.quizHistory.length){
+      histWrap.hidden = false;
+      document.getElementById("quizHistoryBox").innerHTML = state.quizHistory.map(function(a){
+        var topicLabel = a.topic === "all" ? "Tất cả chủ đề" : a.topic;
+        var parts = [a.date, topicLabel];
+        if(a.type) parts.push(quizTypeLabel(a.type));
+        return '<div class="topicrow"><div class="trow-top"><span>' + esc(parts.join(" · ")) + '</span><span>' + a.correct + '/' + a.total + '</span></div></div>';
+      }).join("");
+    } else {
+      histWrap.hidden = true;
+    }
+  }
+
+  // ---------- wiring ----------
+  function setTab(tab){
+    state.tab = tab;
+    document.querySelectorAll(".tab").forEach(function(b){ b.classList.toggle("active", b.dataset.tab===tab); });
+    ["study","quiz","progress"].forEach(function(t){
+      document.getElementById("panel-"+t).classList.toggle("active", t===tab);
+    });
+    if(tab==="progress") renderProgress();
+    if(tab==="quiz") renderQuiz();
+  }
+  function setMode(mode){
+    state.mode = mode;
+    document.querySelectorAll("#modeGroup .pill").forEach(function(b){ b.classList.toggle("active", b.dataset.mode===mode); });
+    buildQueue();
+    renderStudy();
+  }
+
+  document.getElementById("tabs").addEventListener("click", function(e){
+    var b = e.target.closest(".tab"); if(!b) return;
+    setTab(b.dataset.tab);
+  });
+  document.getElementById("modeGroup").addEventListener("click", function(e){
+    var b = e.target.closest(".pill"); if(!b) return;
+    setMode(b.dataset.mode);
+  });
+  document.getElementById("shuffleBtn").addEventListener("click", function(){
+    state.shuffle = !state.shuffle;
+    this.classList.toggle("on", state.shuffle);
+    buildQueue();
+    renderStudy();
+  });
+  document.getElementById("topicSelect").addEventListener("change", function(){
+    state.topic = this.value;
+    buildQueue();
+    renderStudy();
+  });
+  document.getElementById("dontKnowBtn").addEventListener("click", function(){ markCard(false); });
+  document.getElementById("knowBtn").addEventListener("click", function(){ markCard(true); });
+  document.addEventListener("keydown", function(e){
+    if(state.tab === "study"){
+      if(e.code === "Space"){ e.preventDefault(); flipCard(); }
+      else if(e.code === "ArrowLeft" && state.flipped){ markCard(false); }
+      else if(e.code === "ArrowRight" && state.flipped){ markCard(true); }
+    } else if(state.tab === "quiz" && state.quiz.phase === "active"){
+      var cur = state.quiz.questions[state.quiz.qi];
+      if(!cur) return;
+      if(cur.type === "type"){
+        if(!cur.answered && e.code === "Enter"){ e.preventDefault(); submitTyped(); }
+        else if(cur.answered && e.code === "Enter"){ e.preventDefault(); nextQuestion(); }
+        return;
+      }
+      if(!cur.answered && /^Digit[1-4]$/.test(e.code)){
+        var oi = parseInt(e.code.slice(5),10) - 1;
+        if(cur.options && oi < cur.options.length) answerQuiz(oi);
+      } else if(cur.answered && (e.code === "Enter" || e.code === "Space")){
+        e.preventDefault();
+        nextQuestion();
+      }
+    }
+  });
+
+  var topicSelect = document.getElementById("topicSelect");
+  topicSelect.innerHTML = topicOptionsHtml();
+
+  loadLocal();
+  buildQueue();
+  renderStudy();
+  renderQuiz();
+  renderProgress();
+})();
+</script>
+</body>
+</html>
